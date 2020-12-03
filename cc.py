@@ -1,6 +1,5 @@
 import ast
 
-
 class GeneralVisitor(ast.NodeVisitor):
 
     def __init__(self):
@@ -60,10 +59,3 @@ def calc_cyclomatic(source):
     visitor = GeneralVisitor()
     visitor.visit(root)
     return visitor
-
-
-
-
-visitor = calc_cyclomatic(source)
-print(visitor.metrics)
-print(visitor.function)
