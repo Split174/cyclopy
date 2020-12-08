@@ -1,13 +1,32 @@
 import ast
 import os
 import argparse
-from typing import Dict
+import git
+from typing import Dict, Tuple, List
+from dataclasses import dataclass
+
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", required=True, type=str)
+parser.add_argument("-s", "--srcdir", type=str, default="")
+parser.add_argument("-g", "--git", type=str, default="")
 args = parser.parse_args()
 
-class GeneralVisitor(ast.NodeVisitor):
 
+@dataclass
+class SourceFile:
+    name: str
+    function: Dict[str, int]
+    total_complexity: int
+
+    def __repr__(self):
+        res = ""
+        res += f"{self.name} - {self.total_complexity}"
+        sort_func = dict(sorted(self.function.items(), key=lambda x: x[1], reverse=True))
+        for func in sort_func:
+            res += f"\n\t{func} - {sort_func[func]}"
+        return res
+
+
+class GeneralVisitor(ast.NodeVisitor):
     def __init__(self, filename):
         self.filename = filename
         self.function: Dict[str, int] = {}
@@ -45,6 +64,18 @@ class GeneralVisitor(ast.NodeVisitor):
         self.metrics += 1
         self.generic_visit(node)
 
+    def visit_With(self, node):
+        self.metrics += 1
+        self.generic_visit(node)
+
+    def visit_And(self, node):
+        self.metrics += 1
+        self.generic_visit(node)
+
+    def visit_Or(self, node):
+        self.metrics += 1
+        self.generic_visit(node)
+
     def visit_FunctionDef(self, node):
         func_vis = GeneralVisitor(None)
         for child in node.body:
@@ -56,13 +87,9 @@ class GeneralVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node):
         self.visit_FunctionDef(node)
 
-    def __repr__(self):
-        res = ""
-        res += f"{self.filename} - {self.metrics}"
-        sort_func = dict(sorted(self.function.items(), key=lambda x: x[1]))
-        for func in sort_func:
-            res += f"\n\t{func} - {sort_func[func]}"
-        return res
+    def to_dataclass(self):
+        return SourceFile(name=self.filename, function=self.function, total_complexity=self.metrics)
+
 
 def calc_cyclomatic(source: str, filename: str):
     root = ast.parse(source)
@@ -86,23 +113,39 @@ def get_python_files(path):
     return py_files_path
 
 
-def calc_dir(path):
+def calc_dir(path) -> Tuple[int, List[SourceFile]]:
     py_files_path = get_python_files(path)
     total_complexity = 0
+    files_inform: List[SourceFile] = []
     for py_file in py_files_path:
         with open(py_file, "r") as file:
             source = file.read()
             visitor = calc_cyclomatic(source, py_file)
-            print(visitor)
+            files_inform.append(visitor.to_dataclass())
             total_complexity += visitor.metrics
-    print('----------------------------')
-    print(total_complexity)
+
+    return total_complexity, files_inform
 
 
 def main():
-    src = args.s
-    calc_dir(src)
-
+    src_arg = args.srcdir
+    git_arg = args.git
+    path = ""
+    if src_arg == "" and git_arg == "":
+        print("plz add argument -s or -g")
+        return
+    if src_arg != "" and os.path.isdir(src_arg):
+        path = src_arg
+    elif git_arg != "":
+        git.Git("./CyclomaticComplexityTemporaryDir/").clone(git_arg)
+        path = "./CyclomaticComplexityTemporaryDir/"
+    total, files_inform = calc_dir(path)
+    files_inform = sorted(files_inform, key=lambda x: x.total_complexity,
+                          reverse=True)
+    for file in files_inform:
+        print(file)
+    print("-----------------------------")
+    print("total = ", total)
 
 if __name__ == "__main__":
     main()
