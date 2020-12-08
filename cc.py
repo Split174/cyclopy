@@ -4,6 +4,7 @@ import argparse
 import git
 from typing import Dict, Tuple, List
 from dataclasses import dataclass
+import shutil
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-s", "--srcdir", type=str, default="")
@@ -137,8 +138,10 @@ def main():
     if src_arg != "" and os.path.isdir(src_arg):
         path = src_arg
     elif git_arg != "":
-        git.Git("./CyclomaticComplexityTemporaryDir/").clone(git_arg)
         path = "./CyclomaticComplexityTemporaryDir/"
+        os.mkdir(path)
+        git.Git(path).clone(git_arg)
+
     total, files_inform = calc_dir(path)
     files_inform = sorted(files_inform, key=lambda x: x.total_complexity,
                           reverse=True)
@@ -146,6 +149,10 @@ def main():
         print(file)
     print("-----------------------------")
     print("total = ", total)
+    if path == "./CyclomaticComplexityTemporaryDir/":
+        print(path)
+        shutil.rmtree(path)
+
 
 if __name__ == "__main__":
     main()
