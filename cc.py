@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import shutil
 
 parser = argparse.ArgumentParser()
+parser.add_argument("-f", "--file", type=str, default="")
 parser.add_argument("-s", "--srcdir", type=str, default="")
 parser.add_argument("-g", "--git", type=str, default="")
 args = parser.parse_args()
@@ -129,13 +130,20 @@ def calc_dir(path) -> Tuple[int, List[SourceFile]]:
 
 
 def main():
+    file_arg = args.file
     src_arg = args.srcdir
     git_arg = args.git
     path = ""
-    if src_arg == "" and git_arg == "":
+    if file_arg == "" and src_arg == "" and git_arg == "":
         print("plz add argument -s or -g")
         return
-    if src_arg != "" and os.path.isdir(src_arg):
+    if file_arg != "":
+        with open(file_arg, "r") as file:
+            source = file.read()
+            visitor = calc_cyclomatic(source, file_arg)
+            print(visitor.to_dataclass())
+        return
+    elif src_arg != "" and os.path.isdir(src_arg):
         path = src_arg
     elif git_arg != "":
         path = "./CyclomaticComplexityTemporaryDir/"
@@ -156,4 +164,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
