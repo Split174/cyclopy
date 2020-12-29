@@ -23,9 +23,13 @@ class SourceFile:
 
     def __repr__(self):
         res = ""
-        res += f"{self.name} - {self.total_complexity}"
+        res += f"\n{self.name} - {self.total_complexity}"
+        first_col = max([len(key) for key in self.function.keys()])
+        second_col = max([len(str(value)) for value in self.function.values()])
+        res += f"\n\t+" + "-" * (first_col + second_col + 3) + "+"
         for func in self.function:
-            res += f"\n\t{func} - {self.function[func]}"
+            res += f"\n\t|{func:{first_col}} | {self.function[func]:{second_col}}|"
+        res += f"\n\t+" + "-" * (first_col + second_col + 3) + "+"
         return res
 
     def __post_init__(self):
@@ -134,7 +138,8 @@ def calc_dir(path) -> Tuple[int, List[SourceFile]]:
         with open(py_file, "r") as file:
             source = file.read()
             visitor = calc_cyclomatic(source, py_file)
-            files_inform.append(visitor.to_dataclass())
+            if visitor.metrics > args.limit:
+                files_inform.append(visitor.to_dataclass())
             total_complexity += visitor.metrics
 
     return total_complexity, files_inform
@@ -163,10 +168,10 @@ def main():
 
     total, files_inform = calc_dir(path)
     files_inform = sorted(files_inform, key=lambda x: x.total_complexity, reverse=True)
+    print("total = ", total)
+    print("-----------------------------")
     for file in files_inform:
         print(file)
-    print("-----------------------------")
-    print("total = ", total)
     if path == CLONE_PATH:
         print(path)
         shutil.rmtree(path)

@@ -1,6 +1,6 @@
 ### A tool for calculating the cyclomatic complexity of projects written in python
 
-#### Installation
+# Installation
 
 ```
 git clone https://github.com/Split174/cyclopy ~/path/to/
@@ -10,19 +10,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### Usage
-
-##### Calculation in a local directory
+# Calculation in a local directory
 
 single file:
 
 ```python cc.py -f "./cc.py"``` 
 
+![single file example](../assets/example_cc_single.png)
+
 project:
 
-```python cc.py -d path_to_project_src``` 
+```python cc.py -s path_to_project_src``` 
 
-##### Computing from git repository
+# Computing from git repository
 
 ```python3 cc.py -g "https://github.com/Split174/financial-accounting"```
+
+![git example](../assets/example_cc1.png)
 
