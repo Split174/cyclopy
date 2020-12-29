@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 single file:
 
-```python cc.py -f cc.py``` 
+```python cc.py -f "./cc.py"``` 
 
 project:
 
@@ -24,5 +24,5 @@ project:
 
 ##### Computing from git repository
 
-```python3 cc.py -g "https://github.com/Split174/financial-accounting```
+```python3 cc.py -g "https://github.com/Split174/financial-accounting"```
 

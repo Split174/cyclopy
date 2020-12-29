@@ -7,11 +7,13 @@ from dataclasses import dataclass
 import shutil
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-f", "--file", type=str, default="")
-parser.add_argument("-s", "--srcdir", type=str, default="")
-parser.add_argument("-g", "--git", type=str, default="")
+parser.add_argument("-f", "--file", type=str, default="", help="calculate cyclomatic complexity in one file")
+parser.add_argument("-s", "--srcdir", type=str, default="", help="calculate the cyclomatic complexity of the project in the local directory")
+parser.add_argument("-g", "--git", type=str, default="", help="calculate the cyclomatic complexity of the project in the git project")
+parser.add_argument("-l", "--limit", type=int, default=0)
 args = parser.parse_args()
 
+CLONE_PATH = "./CyclomaticComplexityTemporaryDir/"
 
 @dataclass
 class SourceFile:
@@ -22,10 +24,12 @@ class SourceFile:
     def __repr__(self):
         res = ""
         res += f"{self.name} - {self.total_complexity}"
-        sort_func = dict(sorted(self.function.items(), key=lambda x: x[1], reverse=True))
-        for func in sort_func:
-            res += f"\n\t{func} - {sort_func[func]}"
+        for func in self.function:
+            res += f"\n\t{func} - {self.function[func]}"
         return res
+
+    def __post_init__(self):
+        self.name = self.name.replace(CLONE_PATH, "")
 
 
 class GeneralVisitor(ast.NodeVisitor):
@@ -33,6 +37,7 @@ class GeneralVisitor(ast.NodeVisitor):
         self.filename = filename
         self.function: Dict[str, int] = {}
         self.metrics = 0
+        self.min_limit = args.limit
 
     def visit_IfExp(self, node):
         self.metrics += 1
@@ -82,6 +87,8 @@ class GeneralVisitor(ast.NodeVisitor):
         func_vis = GeneralVisitor(None)
         for child in node.body:
             func_vis.visit(child)
+            if func_vis.metrics <= self.min_limit:
+                continue
             func_name = f"{node.parent.name}.{node.name}" if hasattr(node, "parent") else node.name
             self.function[func_name] = func_vis.metrics
         self.generic_visit(node)
@@ -90,7 +97,11 @@ class GeneralVisitor(ast.NodeVisitor):
         self.visit_FunctionDef(node)
 
     def to_dataclass(self):
-        return SourceFile(name=self.filename, function=self.function, total_complexity=self.metrics)
+        functions = dict(sorted(self.function.items(), key=lambda x: x[1],
+                          reverse=True))
+        return SourceFile(name=self.filename,
+                          function=functions,
+                          total_complexity=self.metrics)
 
 
 def calc_cyclomatic(source: str, filename: str):
@@ -135,7 +146,7 @@ def main():
     git_arg = args.git
     path = ""
     if file_arg == "" and src_arg == "" and git_arg == "":
-        print("plz add argument -s or -g")
+        print("plz add argument -s or -g or -f")
         return
     if file_arg != "":
         with open(file_arg, "r") as file:
@@ -146,18 +157,17 @@ def main():
     elif src_arg != "" and os.path.isdir(src_arg):
         path = src_arg
     elif git_arg != "":
-        path = "./CyclomaticComplexityTemporaryDir/"
+        path = CLONE_PATH
         os.mkdir(path)
         git.Git(path).clone(git_arg)
 
     total, files_inform = calc_dir(path)
-    files_inform = sorted(files_inform, key=lambda x: x.total_complexity,
-                          reverse=True)
+    files_inform = sorted(files_inform, key=lambda x: x.total_complexity, reverse=True)
     for file in files_inform:
         print(file)
     print("-----------------------------")
     print("total = ", total)
-    if path == "./CyclomaticComplexityTemporaryDir/":
+    if path == CLONE_PATH:
         print(path)
         shutil.rmtree(path)
 
