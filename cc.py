@@ -24,6 +24,8 @@ class SourceFile:
     def __repr__(self):
         res = ""
         res += f"\n{self.name} - {self.total_complexity}"
+        if not self.function:
+            return res
         first_col = max([len(key) for key in self.function.keys()])
         second_col = max([len(str(value)) for value in self.function.values()])
         res += f"\n\t+" + "-" * (first_col + second_col + 3) + "+"
