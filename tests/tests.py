@@ -1,5 +1,5 @@
 import unittest
-from cc import calc_cyclomatic
+from cyclopy.cc import calc_cyclomatic
 import os
 
 class TestCalcMetric(unittest.TestCase):
